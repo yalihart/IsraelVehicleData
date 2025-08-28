@@ -1,4 +1,6 @@
 # Israel Public Vehicle Data
+<img width="1914" height="947" alt="image" src="https://github.com/user-attachments/assets/aa9c5842-4273-4964-a2e4-04633498e67b" />
+
 This project is an interactive web tool designed to make vehicle data in Israel accessible. The website pulls live data from the government's open data platform, presenting it in a clear and user-friendly way. The goal of this project is to provide a quick and comprehensive look into the Israeli vehicle landscape, whether you're interested in the big numbers or looking for details on a specific car.
 
 ## What Does the Website Offer?

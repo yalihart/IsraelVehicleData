@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>נתוני רכב ציבוריים בישראל</title>
+    <!-- Inter font for clean typography -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap">
+    <!-- Tailwind CSS CDN for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+        /* Custom scrollbar for a sleek look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #30363d;
+            border-radius: 4px;
+        }
+        .shimmer {
+            animation: shimmer 2s infinite linear;
+            background: linear-gradient(90deg, #161b22 25%, #23282e 50%, #161b22 75%);
+            background-size: 200% 100%;
+        }
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto">
+
+        <!-- Header -->
+        <header class="text-center mb-10 flex flex-col sm:flex-row justify-between items-center">
+            <div class="flex-1 mb-4 sm:mb-0">
+                <h1 id="main-title" class="text-3xl sm:text-5xl font-bold text-white"></h1>
+                <p id="main-subtitle" class="text-gray-400 text-sm sm:text-base"></p>
+            </div>
+            <!-- Language Selector -->
+            <div class="flex-shrink-0">
+                <select id="language-selector" class="p-2 rounded-lg bg-[#161b22] border border-[#2f3844] text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#58a6ff]">
+                    <option value="he">עברית</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Vehicle Search Section - MOVED AND RESTYLED -->
+        <div class="bg-[#12161b] p-8 rounded-2xl shadow-2xl border border-[#2f3844] mb-10">
+            <h2 id="search-title" class="text-2xl sm:text-3xl font-bold mb-2 text-white text-center"></h2>
+            <p id="search-description" class="text-gray-400 text-center mb-6"></p>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="license-plate-input"
+                       class="flex-grow p-3 rounded-lg bg-[#0d1117] border border-[#2f3844] text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#58a6ff]">
+                <button id="search-button" class="bg-[#238636] hover:bg-[#2ea043] transition-colors duration-200 text-white font-bold py-3 px-6 rounded-lg shadow-md"></button>
+            </div>
+            
+            <!-- Search Results Display -->
+            <div id="search-results" class="mt-6 hidden">
+                <div id="loading-spinner" class="text-center hidden">
+                    <svg class="animate-spin h-8 w-8 text-gray-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p id="loading-text" class="mt-2 text-gray-400"></p>
+                </div>
+                <div id="result-content" class="bg-[#0d1117] p-5 rounded-lg border border-[#2f3844] mt-4"></div>
+            </div>
+        </div>
+
+        <!-- Stats Dashboard -->
+        <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+            <!-- Cars Card -->
+            <div class="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#2f3844]">
+                <h3 id="cars-title" class="text-lg font-semibold text-gray-300"></h3>
+                <p id="cars-count" class="text-4xl font-extrabold text-[#58a6ff] mt-2 shimmer h-12 w-32 rounded-lg"></p>
+            </div>
+
+            <!-- Motorcycles Card -->
+            <div class="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#2f3844]">
+                <h3 id="motorcycles-title" class="text-lg font-semibold text-gray-300"></h3>
+                <p id="motorcycles-count" class="text-4xl font-extrabold text-[#7ee787] mt-2 shimmer h-12 w-32 rounded-lg"></p>
+            </div>
+
+            <!-- Aircraft Card -->
+            <div class="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#2f3844]">
+                <h3 id="aircraft-title" class="text-lg font-semibold text-gray-300"></h3>
+                <p id="aircraft-count" class="text-4xl font-extrabold text-[#e2b2bb] mt-2 shimmer h-12 w-32 rounded-lg"></p>
+            </div>
+
+            <!-- Disabled Vehicles Card -->
+            <div class="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#2f3844]">
+                <h3 id="disabled-title" class="text-lg font-semibold text-gray-300"></h3>
+                <p id="disabled-count" class="text-4xl font-extrabold text-[#c08dff] mt-2 shimmer h-12 w-32 rounded-lg"></p>
+            </div>
+            
+            <!-- Electric Vehicles Card -->
+            <div class="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#2f3844]">
+                <h3 id="electricCarsTitle" class="text-lg font-semibold text-gray-300"></h3>
+                <p id="electricCarsCount" class="text-4xl font-extrabold text-[#ffde5c] mt-2 shimmer h-12 w-32 rounded-lg"></p>
+            </div>
+        </div>
+        
+        <!-- Electric Vehicle Hotspots Section -->
+        <div id="top-ev-container" class="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#2f3844] mb-10">
+            <h2 id="topEvTitle" class="text-2xl font-bold mb-4 text-white"></h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-right text-gray-400">
+                    <thead class="text-xs text-gray-300 uppercase bg-[#21262d]">
+                        <tr>
+                            <th id="tableHeaderRank" scope="col" class="py-3 px-6 text-center rounded-r-lg"></th>
+                            <th id="tableHeaderArea" scope="col" class="py-3 px-6"></th>
+                            <th id="tableHeaderCount" scope="col" class="py-3 px-6 rounded-l-lg"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="topEvList" class="divide-y divide-[#2f3844]">
+                        <!-- List items will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for API calls and functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // API Endpoints for total counts
+            const carsEndpoint = `https://data.gov.il/api/3/action/datastore_search?resource_id=053cea08-09bc-40ec-8f7a-156f0677aff3&limit=0`;
+            const motorcyclesEndpoint = `https://data.gov.il/api/3/action/datastore_search?resource_id=bf9df4e2-d90d-4c0a-a400-19e15af8e95f&limit=0`;
+            const aircraftEndpoint = `https://data.gov.il/api/3/action/datastore_search?resource_id=bc00ed41-75d0-4d0f-9eca-3cd0a2c332cc&limit=0`;
+            const disabledEndpoint = `https://data.gov.il/api/3/action/datastore_search?resource_id=c8b9f9c8-4612-4068-934f-d4acd2e3c06e&limit=0`;
+            // New endpoint for electric vehicles - we need all records to sum 'car_num'
+            const electricCarsEndpoint = `https://data.gov.il/api/3/action/datastore_search?resource_id=07421a4e-5b12-4444-9173-5ca297b31f79&limit=32000`;
+
+
+            // API Endpoints for detailed vehicle search
+            const searchEndpoints = {
+                private_commercial: '053cea08-09bc-40ec-8f7a-156f0677aff3',
+                public: 'cf29862d-ca25-4691-84f6-1be60dcb4a1e',
+                imported: '03adc637-b6fe-402b-9937-7c3d3afc9140',
+                motorcycle: 'bf9df4e4-d90d-4c0a-a400-19e15af8e95f'
+            };
+            const disabledTagEndpoint = 'c8b9f9c8-4612-4068-934f-d4acd2e3c06e';
+
+            // Element references
+            const bodyEl = document.body;
+            const mainTitleEl = document.getElementById('main-title');
+            const mainSubtitleEl = document.getElementById('main-subtitle');
+            const carsTitleEl = document.getElementById('cars-title');
+            const motorcyclesTitleEl = document.getElementById('motorcycles-title');
+            const aircraftTitleEl = document.getElementById('aircraft-title');
+            const disabledTitleEl = document.getElementById('disabled-title');
+            const electricCarsTitleEl = document.getElementById('electricCarsTitle');
+            const searchTitleEl = document.getElementById('search-title');
+            const searchDescriptionEl = document.getElementById('search-description'); // New element
+            const licensePlateInput = document.getElementById('license-plate-input');
+            const searchButton = document.getElementById('search-button');
+            const searchResultsEl = document.getElementById('search-results');
+            const loadingTextEl = document.getElementById('loading-text');
+            const resultContentEl = document.getElementById('result-content');
+            const languageSelector = document.getElementById('language-selector');
+
+            const carsCountEl = document.getElementById('cars-count');
+            const motorcyclesCountEl = document.getElementById('motorcycles-count');
+            const aircraftCountEl = document.getElementById('aircraft-count');
+            const disabledCountEl = document.getElementById('disabled-count');
+            const electricCarsCountEl = document.getElementById('electricCarsCount');
+            const loadingSpinnerEl = document.getElementById('loading-spinner');
+
+            // New element references for the EV list
+            const topEvTitleEl = document.getElementById('topEvTitle');
+            const topEvListEl = document.getElementById('topEvList');
+            const tableHeaderRankEl = document.getElementById('tableHeaderRank');
+            const tableHeaderAreaEl = document.getElementById('tableHeaderArea');
+            const tableHeaderCountEl = document.getElementById('tableHeaderCount');
+
+            // --- Translation Dictionary ---
+            const translations = {
+                'he': {
+                    title: 'נתוני רכב ציבוריים בישראל',
+                    subtitle: 'מספרים, סטטיסטיקות ומידע על לוחיות רישוי - עדכונים חיים מפלטפורמת המידע הממשלתית הפתוחה',
+                    carsTitle: 'סה"כ רכבים פרטיים',
+                    motorcyclesTitle: 'סה"כ אופנועים',
+                    aircraftTitle: 'סה"כ כלי טיס',
+                    disabledTitle: 'סה"כ רכבי נכה',
+                    electricCarsTitle: 'סה"כ רכבים חשמליים',
+                    topElectricCarsTitle: 'אזורים מובילים בכלי רכב חשמליים',
+                    tableHeaderRank: 'דירוג',
+                    tableHeaderArea: 'נפה',
+                    tableHeaderCount: 'כמות',
+                    searchTitle: 'חיפוש רכב לפי מספר רישוי',
+                    searchDescription: 'הכנס מספר רישוי כדי לקבל מידע מפורט על הרכב',
+                    inputPlaceholder: 'הכנס מספר רישוי (לדוגמה: 1234567)',
+                    searchButton: 'חפש',
+                    loadingText: 'מחפש רכב...',
+                    vehicleInfoTitle: 'מידע על הרכב',
+                    licensePlate: 'מספר רישוי',
+                    manufacturer: 'יצרן',
+                    model: 'דגם',
+                    year: 'שנת ייצור',
+                    color: 'צבע',
+                    engineVolume: 'נפח מנוע',
+                    licensingTestDate: 'תאריך מבחן רישוי',
+                    fuelType: 'סוג דלק',
+                    vehicleType: 'סוג רכב',
+                    seats: 'מספר מקומות',
+                    originCountry: 'ארץ ייצור',
+                    importType: 'סוג ייבוא',
+                    disabledTag: 'תג נכה',
+                    ownership: 'בעלות',
+                    yes: 'כן',
+                    no: 'לא',
+                    notFound: (plate) => `מצטערים, לא נמצאו פרטים עבור מספר הרישוי "${plate}".`,
+                    searchError: 'אירעה שגיאה בחיפוש. אנא נסה שנית מאוחר יותר.',
+                    fetchError: 'שגיאה',
+                    notAvailable: 'לא זמין',
+                    cc: 'סמ"ק',
+                    source: 'מקור',
+                    sources: {
+                        '053cea08-09bc-40ec-8f7a-156f0677aff3': 'מאגר רכב פרטי/מסחרי',
+                        'cf29862d-ca25-4691-84f6-1be60dcb4a1e': 'מאגר רכב ציבורי',
+                        '03adc637-b6fe-402b-9937-7c3d3afc9140': 'מאגר רכב ביבוא אישי',
+                        'bf9df4e2-d90d-4c0a-a400-19e15af8e95f': 'מאגר רכב דו-גלגלי',
+                        'c8b9f9c8-4612-4068-934f-d4acd2e3c06e': 'מאגר רכב עם תג נכה'
+                    },
+                    databasesFoundIn: 'מידע נמצא במאגרים הבאים:',
+                },
+                'en': {
+                    title: 'Public Vehicle Data in Israel',
+                    subtitle: 'Numbers, statistics, and license plate information - live updates from the government\'s open data platform.',
+                    carsTitle: 'Total Private Cars',
+                    motorcyclesTitle: 'Total Motorcycles',
+                    aircraftTitle: 'Total Aircraft',
+                    disabledTitle: 'Total Disabled Vehicles',
+                    electricCarsTitle: 'Total Electric Cars',
+                    topElectricCarsTitle: 'Top Areas with Electric Vehicles',
+                    tableHeaderRank: 'Rank',
+                    tableHeaderArea: 'Area (Nafa)',
+                    tableHeaderCount: 'Count',
+                    searchTitle: 'Search Vehicle by License Plate',
+                    searchDescription: 'Enter a license plate number to get detailed vehicle information.',
+                    inputPlaceholder: 'Enter License Plate Number (e.g.: 1234567)',
+                    searchButton: 'Search',
+                    loadingText: 'Searching for vehicle...',
+                    vehicleInfoTitle: 'Vehicle Information',
+                    licensePlate: 'License Plate Number',
+                    manufacturer: 'Manufacturer',
+                    model: 'Model',
+                    year: 'Year of Manufacture',
+                    color: 'Color',
+                    engineVolume: 'Engine Volume',
+                    licensingTestDate: 'Licensing Test Date',
+                    fuelType: 'Fuel Type',
+                    vehicleType: 'Vehicle Type',
+                    seats: 'Number of Seats',
+                    originCountry: 'Country of Origin',
+                    importType: 'Import Type',
+                    disabledTag: 'Disabled Tag',
+                    ownership: 'Ownership',
+                    yes: 'Yes',
+                    no: 'No',
+                    notFound: (plate) => `Sorry, no details were found for license plate "${plate}".`,
+                    searchError: 'An error occurred during the search. Please try again later.',
+                    fetchError: 'Error',
+                    notAvailable: 'Not available',
+                    cc: 'cc',
+                    source: 'Source',
+                    sources: {
+                        '053cea08-09bc-40ec-8f7a-156f0677aff3': 'Private/Commercial Vehicle Database',
+                        'cf29862d-ca25-4691-84f6-1be60dcb4a1e': 'Public Vehicle Database',
+                        '03adc637-b6fe-402b-9937-7c3d3afc9140': 'Personal Import Vehicle Database',
+                        'bf9df4e2-d90d-4c0a-a400-19e15af8e95f': 'Two-Wheeled Vehicle Database',
+                        'c8b9f9c8-4612-4068-934f-d4acd2e3c06e': 'Disabled Parking Tag Database'
+                    },
+                    databasesFoundIn: 'Information found in the following databases:',
+                }
+            };
+
+            // --- Function to set the UI language ---
+            const setLanguage = (lang) => {
+                const text = translations[lang];
+                document.title = text.title;
+                bodyEl.dir = lang === 'he' ? 'rtl' : 'ltr';
+
+                // Update static text elements
+                mainTitleEl.textContent = text.title;
+                mainSubtitleEl.textContent = text.subtitle;
+                carsTitleEl.textContent = text.carsTitle;
+                motorcyclesTitleEl.textContent = text.motorcyclesTitle;
+                aircraftTitleEl.textContent = text.aircraftTitle;
+                disabledTitleEl.textContent = text.disabledTitle;
+                electricCarsTitleEl.textContent = text.electricCarsTitle;
+                topEvTitleEl.textContent = text.topElectricCarsTitle;
+                tableHeaderRankEl.textContent = text.tableHeaderRank;
+                tableHeaderAreaEl.textContent = text.tableHeaderArea;
+                tableHeaderCountEl.textContent = text.tableHeaderCount;
+                searchTitleEl.textContent = text.searchTitle;
+                searchDescriptionEl.textContent = text.searchDescription;
+                licensePlateInput.placeholder = text.inputPlaceholder;
+                searchButton.textContent = text.searchButton;
+                loadingTextEl.textContent = text.loadingText;
+            };
+
+            // --- Function to fetch all vehicle counts concurrently ---
+            const fetchVehicleStats = async () => {
+                try {
+                    const [carsRes, motorcyclesRes, aircraftRes, disabledRes, electricRes] = await Promise.all([
+                        fetch(carsEndpoint),
+                        fetch(motorcyclesEndpoint),
+                        fetch(aircraftEndpoint),
+                        fetch(disabledEndpoint),
+                        fetch(electricCarsEndpoint)
+                    ]);
+
+                    const carsData = await carsRes.json();
+                    const motorcyclesData = await motorcyclesRes.json();
+                    const aircraftData = await aircraftRes.json();
+                    const disabledData = await disabledRes.json();
+                    const electricData = await electricRes.json();
+
+                    carsCountEl.classList.remove('shimmer');
+                    carsCountEl.textContent = (carsData.result.total || 0).toLocaleString();
+
+                    motorcyclesCountEl.classList.remove('shimmer');
+                    motorcyclesCountEl.textContent = (motorcyclesData.result.total || 0).toLocaleString();
+
+                    aircraftCountEl.classList.remove('shimmer');
+                    aircraftCountEl.textContent = (aircraftData.result.total || 0).toLocaleString();
+
+                    disabledCountEl.classList.remove('shimmer');
+                    disabledCountEl.textContent = (disabledData.result.total || 0).toLocaleString();
+
+                    let totalElectricCars = 0;
+                    if (electricData.result.records) {
+                        totalElectricCars = electricData.result.records.reduce((sum, record) => sum + (record.car_num || 0), 0);
+                    }
+                    electricCarsCountEl.classList.remove('shimmer');
+                    electricCarsCountEl.textContent = totalElectricCars.toLocaleString();
+
+                    if (electricData.result.records) {
+                        populateTopEvList(electricData.result.records);
+                    }
+
+
+                } catch (error) {
+                    console.error("Error fetching vehicle stats:", error);
+                    [carsCountEl, motorcyclesCountEl, aircraftCountEl, disabledCountEl, electricCarsCountEl].forEach(el => {
+                        el.classList.remove('shimmer');
+                        el.textContent = translations[languageSelector.value].fetchError;
+                    });
+                }
+            };
+            
+            // --- Function to process and display top EV areas ---
+            const populateTopEvList = (records) => {
+                const nafaCounts = records.reduce((acc, record) => {
+                    const areaName = record.nafa_nm;
+                    const carCount = record.car_num;
+                    if (areaName && carCount) {
+                        acc[areaName] = (acc[areaName] || 0) + carCount;
+                    }
+                    return acc;
+                }, {});
+
+                const sortedAreas = Object.keys(nafaCounts)
+                    .map(key => ({ nafa_nm: key, car_num: nafaCounts[key] }))
+                    .sort((a, b) => b.car_num - a.car_num);
+
+                topEvListEl.innerHTML = '';
+
+                const topResults = sortedAreas.slice(0, 10);
+                topResults.forEach((area, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'bg-[#1e232a] border-b border-[#2f3844] hover:bg-[#282d33] transition-colors duration-150';
+                    row.innerHTML = `
+                        <td class="py-4 px-6 font-medium text-white text-center">${index + 1}</td>
+                        <td class="py-4 px-6">${area.nafa_nm}</td>
+                        <td class="py-4 px-6 text-right">${area.car_num.toLocaleString()}</td>
+                    `;
+                    topEvListEl.appendChild(row);
+                });
+            };
+
+            // --- Function to search for a vehicle by license plate ---
+            const searchVehicle = async () => {
+                const licensePlate = licensePlateInput.value.trim();
+                if (!licensePlate) {
+                    return;
+                }
+
+                searchResultsEl.classList.remove('hidden');
+                loadingSpinnerEl.classList.remove('hidden');
+                resultContentEl.innerHTML = '';
+                searchButton.disabled = true;
+
+                let mergedRecord = {};
+                let foundSources = [];
+                const mainEndpoints = [
+                    '053cea08-09bc-40ec-8f7a-156f0677aff3',
+                    'cf29862d-ca25-4691-84f6-1be60dcb4a1e',
+                    '03adc637-b6fe-402b-9937-7c3d3afc9140',
+                    'bf9df4e2-d90d-4c0a-a400-19e15af8e95f'
+                ];
+
+                try {
+                    const promises = mainEndpoints.map(resourceId => 
+                        fetch(`https://data.gov.il/api/3/action/datastore_search?resource_id=${resourceId}&q=${licensePlate}&limit=1`)
+                            .then(response => response.json())
+                            .then(data => ({ data, resourceId }))
+                    );
+
+                    const results = await Promise.allSettled(promises);
+
+                    results.forEach(result => {
+                        if (result.status === 'fulfilled' && result.value.data.result.records && result.value.data.result.records.length > 0) {
+                            Object.assign(mergedRecord, result.value.data.result.records[0]);
+                            foundSources.push(result.value.resourceId);
+                        }
+                    });
+
+                    const disabledTagResponse = await fetch(`https://data.gov.il/api/3/action/datastore_search?resource_id=${disabledTagEndpoint}&q=${licensePlate}&limit=1`);
+                    const disabledTagData = await disabledTagResponse.json();
+                    const hasDisabledTag = disabledTagData.result.records && disabledTagData.result.records.length > 0;
+                    if (hasDisabledTag) {
+                        foundSources.push(disabledTagEndpoint);
+                    }
+
+                    loadingSpinnerEl.classList.add('hidden');
+                    searchButton.disabled = false;
+                    const lang = languageSelector.value;
+                    const text = translations[lang];
+
+                    if (Object.keys(mergedRecord).length > 0) {
+                        const fields = [
+                            { he: 'מספר רישוי', en: 'License Plate Number', key: 'mispar_rechev' },
+                            { he: 'יצרן', en: 'Manufacturer', key: 'tozeret_nm' },
+                            { he: 'דגם', en: 'Model', key: ['kinuy_mishari', 'degem_nm'] },
+                            { he: 'שנת ייצור', en: 'Year of Manufacture', key: 'shnat_yitzur' },
+                            { he: 'סוג רכב', en: 'Vehicle Type', key: 'sug_rechev_nm' },
+                            { he: 'בעלות', en: 'Ownership', key: 'baalut' },
+                            { he: 'סוג דלק', en: 'Fuel Type', key: 'sug_delek_nm' },
+                            { he: 'נפח מנוע', en: 'Engine Volume', key: 'nefach_manoa', unit: 'cc' },
+                            { he: 'ארץ ייצור', en: 'Country of Origin', key: 'tozeret_eretz_nm' },
+                            { he: 'סוג ייבוא', en: 'Import Type', key: 'sug_yevu' },
+                            { he: 'מספר מקומות', en: 'Number of Seats', key: 'mispar_mekomot' },
+                            { he: 'תאריך מבחן רישוי', en: 'Licensing Test Date', key: 'mivchan_acharon_dt' },
+                            { he: 'תוקף רישוי', en: 'Licensing Expiration', key: 'tokef_dt' },
+                            { he: 'צבע', en: 'Color', key: 'tzeva_rechev' },
+                        ];
+
+                        let htmlContent = `<h3 class="text-xl font-bold text-white mb-4">${text.vehicleInfoTitle}</h3>`;
+
+                        fields.forEach(field => {
+                            let value = null;
+                            if (Array.isArray(field.key)) {
+                                for (const key of field.key) {
+                                    if (mergedRecord[key]) {
+                                        value = mergedRecord[key];
+                                        break;
+                                    }
+                                }
+                            } else {
+                                value = mergedRecord[field.key];
+                            }
+                            
+                            if (field.key === 'mispar_rechev') {
+                                value = licensePlate;
+                            }
+
+                            if (value) {
+                                if (field.unit && typeof value === 'number') {
+                                    value = `${value.toLocaleString()} ${field.unit}`;
+                                }
+                                htmlContent += `
+                                    <p class="text-gray-400 mb-2">${field[lang]}: <span class="text-white font-semibold">${value}</span></p>
+                                `;
+                            }
+                        });
+
+                        const disabledTagStatus = hasDisabledTag ? text.yes : text.no;
+                        htmlContent += `<p class="text-gray-400 mb-2">${text.disabledTag}: <span class="text-white font-semibold">${disabledTagStatus}</span></p>`;
+                        
+                        if (foundSources.length > 0) {
+                            htmlContent += `
+                                <div class="mt-6 border-t border-[#2f3844] pt-4">
+                                    <h4 class="text-lg font-semibold text-white mb-2">${text.databasesFoundIn}</h4>
+                                    <ul class="list-disc list-inside space-y-1 text-gray-400">
+                                        ${foundSources.map(sourceId => `<li>${text.sources[sourceId] || 'Unknown Database'}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `;
+                        }
+
+                        resultContentEl.innerHTML = htmlContent;
+
+                    } else {
+                        resultContentEl.innerHTML = `
+                            <p class="text-red-400 text-center">
+                                ${text.notFound(licensePlate)}
+                            </p>
+                        `;
+                    }
+                } catch (error) {
+                    loadingSpinnerEl.classList.add('hidden');
+                    searchButton.disabled = false;
+                    console.error("Error searching for vehicle:", error);
+                    resultContentEl.innerHTML = `
+                        <p class="text-red-400 text-center">
+                            ${translations[languageSelector.value].searchError}
+                        </p>
+                    `;
+                }
+            };
+
+            // Event listeners
+            languageSelector.addEventListener('change', (event) => {
+                setLanguage(event.target.value);
+            });
+            searchButton.addEventListener('click', searchVehicle);
+            licensePlateInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    searchVehicle();
+                }
+            });
+
+            // Initial data fetch and UI setup
+            setLanguage('he');
+            fetchVehicleStats();
+        });
+    </script>
+</body>
+</html>
